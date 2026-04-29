@@ -190,6 +190,28 @@ table.ft tr:last-child td{border-bottom:none}
 .task-row:last-child{border-bottom:none}
 .assignee-tag{font-size:9px;padding:1px 7px;border-radius:3px;background:rgba(201,169,110,.15);color:var(--gold)}
 
+/* AI ASSISTANT */
+#ai-bubble{position:fixed;bottom:20px;right:20px;width:44px;height:44px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:250;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .2s}
+#ai-bubble:hover{transform:scale(1.1)}
+#ai-panel{position:fixed;bottom:76px;right:20px;width:340px;height:480px;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;z-index:250;display:none;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+#ai-panel.open{display:flex}
+.ai-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.ai-avatar{width:28px;height:28px;background:rgba(201,169,110,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-title{font-size:13px;color:var(--text);font-weight:500;flex:1}
+.ai-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:2px}
+.ai-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.ai-messages::-webkit-scrollbar{width:3px}
+.ai-messages::-webkit-scrollbar-thumb{background:var(--border2)}
+.ai-msg{max-width:85%;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.5}
+.ai-msg.user{background:var(--gold);color:#0F0E0C;align-self:flex-end;border-bottom-right-radius:2px}
+.ai-msg.assistant{background:var(--bg3);color:var(--text2);align-self:flex-start;border-bottom-left-radius:2px;border:1px solid var(--border)}
+.ai-msg.thinking{color:var(--text3);font-style:italic}
+.ai-input-row{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+.ai-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;font-family:var(--font-sans);resize:none;height:36px;line-height:1.4}
+.ai-input:focus{border-color:var(--gold)}
+.ai-send{background:var(--gold);color:#0F0E0C;border:none;border-radius:6px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.ai-send:hover{background:var(--gold-light)}
+.ai-send:disabled{opacity:.5;cursor:not-allowed}
 
 .toast{position:fixed;bottom:18px;right:18px;background:var(--bg4);border:1px solid var(--green);border-radius:6px;padding:8px 14px;font-size:11px;color:var(--green);z-index:300;display:none;z-index:400}
 @media(max-width:768px){#sidebar{width:180px;min-width:180px}.grid4{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr 1fr}.kanban{grid-template-columns:1fr}.page{padding:20px 16px}}
@@ -700,6 +722,34 @@ table.ft tr:last-child td{border-bottom:none}
 </div>
 
 
+<!-- AI ASSISTANT BUBBLE -->
+<div id="ai-bubble" title="Ask Claude">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F0E0C" stroke-width="2.2">
+    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+  </svg>
+</div>
+
+<div id="ai-panel">
+  <div class="ai-header">
+    <div class="ai-avatar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    </div>
+    <div>
+      <div class="ai-title">BSC Assistant</div>
+      <div style="font-size:9px;color:var(--text3)">Ask me anything about the dashboard</div>
+    </div>
+    <button class="ai-close" id="ai-close-btn">&#x2715;</button>
+  </div>
+  <div class="ai-messages" id="ai-messages">
+    <div class="ai-msg assistant">Hey! I'm your BSC Assistant. Ask me to help update the dashboard, answer questions about your events, tasks, financials, or anything else Club Balboa related.</div>
+  </div>
+  <div class="ai-input-row">
+    <textarea class="ai-input" id="ai-input" placeholder="Ask anything..." rows="1"></textarea>
+    <button class="ai-send" id="ai-send-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
 
 <div id="toast" class="toast"></div>
 
@@ -2078,6 +2128,113 @@ $('save-capture-btn').addEventListener('click', () => {
 });
 
 
+// ============================================================
+// AI ASSISTANT
+// ============================================================
+const aiBubble = $('ai-bubble');
+const aiPanel = $('ai-panel');
+const aiMessages = $('ai-messages');
+const aiInput = $('ai-input');
+const aiSendBtn = $('ai-send-btn');
+
+aiBubble.addEventListener('click', () => {
+  aiPanel.classList.toggle('open');
+  if (aiPanel.classList.contains('open')) {
+    setTimeout(() => aiInput.focus(), 100);
+  }
+});
+
+$('ai-close-btn').addEventListener('click', () => aiPanel.classList.remove('open'));
+
+aiInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendAIMessage();
+  }
+});
+aiSendBtn.addEventListener('click', sendAIMessage);
+
+function addAIMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = `ai-msg ${role}`;
+  div.textContent = text;
+  aiMessages.appendChild(div);
+  aiMessages.scrollTop = aiMessages.scrollHeight;
+  return div;
+}
+
+// Build context about the current dashboard state
+function getDashboardContext() {
+  const taskCount = (tasks.todo || []).length + (tasks.inprogress || []).length;
+  const upcomingEvents = events.filter(e => e.status === 'upcoming').map(e => e.name).join(', ');
+  const openPriorities = priorities.filter(p => !p.done).map(p => p.text).join(', ');
+  const activeProjects = projects.filter(p => p.status === 'active').map(p => p.name).join(', ');
+  
+  return `You are the BSC Assistant for Club Balboa Social Group HQ dashboard. 
+You help the team (Jack, Blake, Lily) manage their social club operations.
+
+Current dashboard state:
+- Open priorities: ${openPriorities || 'none'}
+- Upcoming events: ${upcomingEvents || 'none'}
+- Active projects: ${activeProjects || 'none'}
+- Open tasks: ${taskCount}
+- Team members: ${teamMembers.map(m => m.name + ' (' + m.role + ')').join(', ')}
+- Interns advancing to R2: ${interns.filter(i => i.r2).map(i => i.name).join(', ') || 'none selected yet'}
+
+The dashboard has these sections: Command Center, Events, Social & Content, Engine Room (tasks), Team & Roles, The Playbook, Financials (PIN protected), Intern Pipeline.
+
+Be helpful, concise, and conversational. You know Club Balboa is a social club in the Newport Beach / Orange County area that runs events, has a Run Club, and is building a clothing brand. 
+
+If someone asks you to add/update data, explain clearly what they need to do in the dashboard (e.g. "Go to Events and click + Add Event"). Keep responses under 150 words unless they ask for detail.`;
+}
+
+let aiHistory = [];
+
+async function sendAIMessage() {
+  const text = aiInput.value.trim();
+  if (!text) return;
+  
+  aiInput.value = '';
+  aiSendBtn.disabled = true;
+  
+  addAIMessage('user', text);
+  const thinkingEl = addAIMessage('thinking', 'Thinking...');
+  
+  aiHistory.push({ role: 'user', content: text });
+  
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: getDashboardContext(),
+        messages: aiHistory
+      })
+    });
+    
+    const data = await response.json();
+    
+    thinkingEl.remove();
+    
+    if (data.content && data.content[0]) {
+      const reply = data.content[0].text;
+      addAIMessage('assistant', reply);
+      aiHistory.push({ role: 'assistant', content: reply });
+      // Keep history to last 10 messages to avoid token bloat
+      if (aiHistory.length > 10) aiHistory = aiHistory.slice(-10);
+    } else {
+      addAIMessage('assistant', 'Sorry, something went wrong. Try again.');
+    }
+  } catch (err) {
+    thinkingEl.remove();
+    addAIMessage('assistant', 'Connection error. Make sure you are on the live site (not a local file).');
+  }
+  
+  aiSendBtn.disabled = false;
+  aiInput.focus();
+}
 
 // ============================================================
 // INIT - runs once on page load
